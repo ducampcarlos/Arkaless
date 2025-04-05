@@ -22,4 +22,12 @@ public class Ball : MonoBehaviour
         Vector2 randomDirection = Random.insideUnitCircle.normalized;
         rb.AddForce(randomDirection * 10f, ForceMode2D.Impulse);
     }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("FallOffBoundary"))
+        {
+            GameManager.Instance.Restart();
+        }
+    }
 }
