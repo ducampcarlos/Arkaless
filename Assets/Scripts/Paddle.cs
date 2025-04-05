@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 public class Paddle : MonoBehaviour
 {
     [SerializeField] private float speed = 10f; // Speed of the paddle movement
+    [SerializeField] private float XLimit = 7.5f; // X-axis limit for the paddle movement
 
     private void Update()
     {
@@ -32,5 +33,8 @@ public class Paddle : MonoBehaviour
 
 
         transform.Translate(moveDirection * speed * Time.deltaTime);
+        Vector3 newPos = transform.position;
+        newPos.x = Mathf.Clamp(newPos.x, -XLimit, XLimit);
+        transform.position = newPos;
     }
 }

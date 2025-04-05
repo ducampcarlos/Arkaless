@@ -9,7 +9,6 @@ public class Ball : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        StartBounce();
     }
 
     // Update is called once per frame
@@ -18,7 +17,7 @@ public class Ball : MonoBehaviour
         
     }
 
-    void StartBounce()
+    public void StartBounce()
     {
         Vector2 randomDirection = Random.insideUnitCircle.normalized;
         rb.AddForce(randomDirection * 10f, ForceMode2D.Impulse);
