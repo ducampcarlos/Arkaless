@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 public class Ball : MonoBehaviour
@@ -28,6 +29,14 @@ public class Ball : MonoBehaviour
         if (collision.CompareTag("FallOffBoundary"))
         {
             GameManager.Instance.Restart();
+        }
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Paddle"))
+        {
+            GameManager.Instance.ScoreUp();
         }
     }
 }
