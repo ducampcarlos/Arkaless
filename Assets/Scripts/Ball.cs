@@ -10,6 +10,9 @@ public class Ball : MonoBehaviour
 
     bool isBouncing = false;
 
+    [SerializeField] AudioClip hitPaddle;
+    [SerializeField] AudioClip hitBlock;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -21,6 +24,7 @@ public class Ball : MonoBehaviour
     /// </summary>
     public void StartBounce()
     {
+        rb.bodyType = RigidbodyType2D.Dynamic;
         Vector2 randomDir = Random.insideUnitCircle.normalized;
         rb.linearVelocity = Vector2.zero;
         rb.AddForce(randomDir * speed, ForceMode2D.Impulse);
@@ -37,6 +41,12 @@ public class Ball : MonoBehaviour
         transform.position = initialPosition;
     }
 
+    public void Stop()
+    {
+        rb.linearVelocity = Vector2.zero;
+        rb.bodyType = RigidbodyType2D.Static;
+    }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("FallOffBoundary"))
@@ -49,6 +59,8 @@ public class Ball : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Paddle") && isBouncing)
         {
+            AudioManager.Instance.PlaySFX(hitPaddle);
+
             // Calculate hit point relative to paddle center
             ContactPoint2D contact = collision.contacts[0];
             float paddleWidth = collision.collider.bounds.size.x;
@@ -59,5 +71,11 @@ public class Ball : MonoBehaviour
             Vector2 newDir = new Vector2(normalizedOffset, 1f).normalized;
             rb.linearVelocity = newDir * speed;
         }
+        else if (collision.gameObject.CompareTag("Block"))
+        {
+            AudioManager.Instance.PlaySFX(hitBlock);
+        }
     }
+
+
 }

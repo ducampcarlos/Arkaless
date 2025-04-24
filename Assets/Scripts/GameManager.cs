@@ -40,7 +40,6 @@ public class GameManager : MonoBehaviour
     {
         gameStarted = true;
         if (gameMenuUI != null) gameMenuUI.SetActive(false);
-        FindAnyObjectByType<Ball>().StartBounce();
         OnGameStarted?.Invoke();
     }
 

@@ -16,7 +16,6 @@ public class LevelManager : MonoBehaviour
     public AudioClip levelCompleteClip;
     public AudioClip loseClip;
 
-    private AudioSource audioSource;
     private int currentLevelIndex = 0;
     private int remainingBlocks;
     private List<Block> registeredBlocks = new List<Block>();
@@ -25,7 +24,6 @@ public class LevelManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-        audioSource = GetComponent<AudioSource>();
     }
 
     void Start()
@@ -57,10 +55,13 @@ public class LevelManager : MonoBehaviour
     {
         if (startClip != null)
         {
-            audioSource.PlayOneShot(startClip);
+            AudioManager.Instance.PlaySFX(startClip);
             yield return new WaitForSeconds(startClip.length);
         }
+        AudioManager.Instance.PlayMusicFromStart();
         LoadLevel(currentLevelIndex);
+        FindAnyObjectByType<Ball>().StartBounce();
+        FindAnyObjectByType<Paddle>().isAllowedToMove = true;
     }
 
     public void RegisterBlock(Block block)
@@ -77,9 +78,12 @@ public class LevelManager : MonoBehaviour
 
     private IEnumerator LevelCompleteRoutine()
     {
+        FindAnyObjectByType<Paddle>().isAllowedToMove = false;
+        FindAnyObjectByType<Ball>().Stop();
+        AudioManager.Instance.StopMusic();
         if (levelCompleteClip != null)
         {
-            audioSource.PlayOneShot(levelCompleteClip);
+            AudioManager.Instance.PlaySFX(levelCompleteClip);
             yield return new WaitForSeconds(levelCompleteClip.length);
         }
         AdvanceToNextLevel();
@@ -139,13 +143,14 @@ public class LevelManager : MonoBehaviour
     private void HandleGameLost()
     {
         StartCoroutine(LoseRoutine());
+        AudioManager.Instance.StopMusic();
     }
 
     private IEnumerator LoseRoutine()
     {
         if (loseClip != null)
         {
-            audioSource.PlayOneShot(loseClip);
+            AudioManager.Instance.PlaySFX(loseClip);
             yield return new WaitForSeconds(loseClip.length);
         }
         GameManager.Instance.RestartImmediate();

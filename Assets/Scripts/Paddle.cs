@@ -8,6 +8,8 @@ public class Paddle : MonoBehaviour
 
     private Vector3 initialPosition;
 
+    public bool isAllowedToMove;
+
     private void Start()
     {
         initialPosition = transform.position;
@@ -15,6 +17,8 @@ public class Paddle : MonoBehaviour
 
     private void Update()
     {
+        if(!isAllowedToMove) return; // Early exit if not allowed to move
+
         Vector2 moveDirection = Vector2.zero;
 
 #if UNITY_ANDROID || UNITY_EDITOR                              
@@ -47,6 +51,7 @@ public class Paddle : MonoBehaviour
 
     public void ResetPosition()
     {
+        isAllowedToMove = false;
         transform.position = initialPosition;
     }
 }
