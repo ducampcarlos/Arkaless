@@ -5,10 +5,13 @@ public class Ball : MonoBehaviour
 {
     Rigidbody2D rb;
 
+    private Vector3 initialPosition;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        initialPosition = transform.position;
     }
 
     // Update is called once per frame
@@ -23,6 +26,11 @@ public class Ball : MonoBehaviour
         rb.AddForce(randomDirection * 10f, ForceMode2D.Impulse);
     }
 
+    public void ResetPosition()
+    {
+        transform.position = initialPosition;
+    }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("FallOffBoundary"))
@@ -35,7 +43,7 @@ public class Ball : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Paddle"))
         {
-            GameManager.Instance.ScoreUp();
+            //GameManager.Instance.ScoreUp();
         }
     }
 }

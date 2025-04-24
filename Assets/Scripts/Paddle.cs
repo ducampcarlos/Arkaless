@@ -6,6 +6,13 @@ public class Paddle : MonoBehaviour
     [SerializeField] private float speed = 10f; // Speed of the paddle movement
     [SerializeField] private float XLimit = 7.5f; // X-axis limit for the paddle movement
 
+    private Vector3 initialPosition;
+
+    private void Start()
+    {
+        initialPosition = transform.position;
+    }
+
     private void Update()
     {
         Vector2 moveDirection = Vector2.zero;
@@ -36,5 +43,10 @@ public class Paddle : MonoBehaviour
         Vector3 newPos = transform.position;
         newPos.x = Mathf.Clamp(newPos.x, -XLimit, XLimit);
         transform.position = newPos;
+    }
+
+    public void ResetPosition()
+    {
+        transform.position = initialPosition;
     }
 }
