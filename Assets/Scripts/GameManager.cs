@@ -1,13 +1,14 @@
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
 using System;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
-
     public event Action OnGameStarted;
     public event Action OnGameLost;
 
@@ -17,7 +18,10 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        else { Destroy(gameObject); return; }
+
+        // Activar Enhanced Touch
+        EnhancedTouchSupport.Enable();
     }
 
     void Update()
@@ -27,12 +31,11 @@ public class GameManager : MonoBehaviour
 
     void DetectGameStart()
     {
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
-
         bool keyPressed = Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
+        bool mousePressed = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
         bool touchPressed = Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame;
 
-        if (keyPressed || touchPressed)
+        if (keyPressed || mousePressed || touchPressed)
             StartGame();
     }
 
@@ -43,16 +46,20 @@ public class GameManager : MonoBehaviour
         OnGameStarted?.Invoke();
     }
 
-    // Llama a este método para notificar pérdida de partida
     public void TriggerGameLost()
     {
         if (!gameStarted) return;
         OnGameLost?.Invoke();
     }
 
-    // Reinicio inmediato de escena
     public void RestartImmediate()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    void OnDestroy()
+    {
+        // Desactivar Enhanced Touch al salir (opcional)
+        EnhancedTouchSupport.Disable();
     }
 }
