@@ -6,6 +6,8 @@ TagManager:
   tags:
   - FallOffBoundary
   - Paddle
+  - Ball
+  - Block
   layers:
   - Default
   - TransparentFX
