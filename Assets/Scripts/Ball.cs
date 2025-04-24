@@ -25,9 +25,8 @@ public class Ball : MonoBehaviour
     public void StartBounce()
     {
         rb.bodyType = RigidbodyType2D.Dynamic;
-        Vector2 randomDir = Random.insideUnitCircle.normalized;
         rb.linearVelocity = Vector2.zero;
-        rb.AddForce(randomDir * speed, ForceMode2D.Impulse);
+        rb.AddForce(Vector2.up * speed, ForceMode2D.Impulse);
         isBouncing = true;
     }
 
@@ -69,6 +68,15 @@ public class Ball : MonoBehaviour
 
             // New direction: X by offset, Y always positive
             Vector2 newDir = new Vector2(normalizedOffset, 1f).normalized;
+
+            // If hit too close to center, apply slight random angle to avoid vertical loops
+            if (Mathf.Abs(normalizedOffset) < 0.1f)
+            {
+                float randomAngle = Random.Range(-10f, 10f); // degrees
+                newDir = Quaternion.Euler(0, 0, randomAngle) * newDir;
+                newDir.Normalize();
+            }
+
             rb.linearVelocity = newDir * speed;
         }
         else if (collision.gameObject.CompareTag("Block"))

@@ -20,7 +20,7 @@ public class Block : MonoBehaviour
         // Update sprite based on initial durability
         UpdateVisual();
         levelManager = FindAnyObjectByType<LevelManager>();
-        levelManager.RegisterBlock(this);
+        //levelManager.RegisterBlock(this);
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -34,12 +34,12 @@ public class Block : MonoBehaviour
         }
         else
         {
+            gameObject.SetActive(false);
             levelManager.NotifyBlockDestroyed(this);
-            Destroy(gameObject);
         }
     }
 
-    void UpdateVisual()
+    public void UpdateVisual()
     {
         int idx = Mathf.Clamp(durability - 1, 0, durabilitySprites.Length - 1);
         sr.sprite = durabilitySprites[idx];

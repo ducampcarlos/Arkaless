@@ -12,9 +12,13 @@ public class LevelManager : MonoBehaviour
     [Tooltip("World-space spacing between blocks")] public Vector2 blockSpacing = new Vector2(1f, 0.5f);
 
     [Header("Sound Effects")]
-    public AudioClip startClip;
-    public AudioClip levelCompleteClip;
-    public AudioClip loseClip;
+    [Tooltip("Sound that plays only once when the game is first started")] public AudioClip gameStartClip;
+    [Tooltip("Sound that plays before each level (round) starts")] public AudioClip roundStartClip;
+    [Tooltip("Sound that plays when the player loses")] public AudioClip loseClip;
+
+    [Header("Pooling")]
+    [Tooltip("Initial number of blocks to pool")] public int initialPoolSize = 20;
+    private List<GameObject> blockPool = new List<GameObject>();
 
     private int currentLevelIndex = 0;
     private int remainingBlocks;
@@ -23,17 +27,18 @@ public class LevelManager : MonoBehaviour
     void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        else { Destroy(gameObject); return; }
     }
 
     void Start()
     {
-        // Suscribirse a eventos del GameManager
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStarted += HandleGameStarted;
             GameManager.Instance.OnGameLost += HandleGameLost;
         }
+        InitBlockPool();
+
     }
 
     void OnDestroy()
@@ -45,23 +50,68 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    // Se dispara tras StartGame()
-    private void HandleGameStarted()
+    private void InitBlockPool()
     {
-        StartCoroutine(StartLevelRoutine());
+        for (int i = 0; i < initialPoolSize; i++)
+        {
+            GameObject block = Instantiate(blockPrefab);
+            block.SetActive(false);
+            block.transform.parent = transform;
+            blockPool.Add(block);
+        }
     }
 
-    private IEnumerator StartLevelRoutine()
+    private GameObject GetBlockFromPool()
     {
-        if (startClip != null)
+        foreach (var block in blockPool)
         {
-            AudioManager.Instance.PlaySFX(startClip);
-            yield return new WaitForSeconds(startClip.length);
+            if (!block.activeInHierarchy)
+                return block;
         }
-        AudioManager.Instance.PlayMusicFromStart();
+
+        GameObject newBlock = Instantiate(blockPrefab);
+        newBlock.transform.parent = transform;
+        newBlock.SetActive(false);
+        blockPool.Add(newBlock);
+        return newBlock;
+    }
+
+
+    private void HandleGameStarted()
+    {
+        StartCoroutine(GameStartRoutine());
+    }
+
+    private IEnumerator GameStartRoutine()
+    {
+        if (gameStartClip != null)
+        {
+            AudioManager.Instance.PlaySFX(gameStartClip);
+            yield return new WaitForSeconds(gameStartClip.length);
+        }
+
+        yield return StartCoroutine(RoundStartRoutine());
+    }
+
+    private IEnumerator RoundStartRoutine()
+    {
+        var paddle = FindAnyObjectByType<Paddle>();
+        var ball = FindAnyObjectByType<Ball>();
+        if (paddle != null) { paddle.isAllowedToMove = false; paddle.ResetPosition(); }
+        if (ball != null) ball.ResetPosition();
+
         LoadLevel(currentLevelIndex);
-        FindAnyObjectByType<Ball>().StartBounce();
-        FindAnyObjectByType<Paddle>().isAllowedToMove = true;
+
+        if (roundStartClip != null)
+        {
+            AudioManager.Instance.PlaySFX(roundStartClip);
+            yield return new WaitForSeconds(roundStartClip.length);
+        }
+
+        AudioManager.Instance.PlayMusicFromStart();
+
+        if (ball != null) ball.StartBounce();
+        if (paddle != null) paddle.isAllowedToMove = true;
     }
 
     public void RegisterBlock(Block block)
@@ -73,48 +123,38 @@ public class LevelManager : MonoBehaviour
     {
         remainingBlocks--;
         if (remainingBlocks <= 0)
-            StartCoroutine(LevelCompleteRoutine());
+            StartCoroutine(HandleRoundComplete());
     }
 
-    private IEnumerator LevelCompleteRoutine()
+    private IEnumerator HandleRoundComplete()
     {
-        FindAnyObjectByType<Paddle>().isAllowedToMove = false;
-        FindAnyObjectByType<Ball>().Stop();
+        var paddle = FindAnyObjectByType<Paddle>();
+        if (paddle != null) paddle.isAllowedToMove = false;
         AudioManager.Instance.StopMusic();
-        if (levelCompleteClip != null)
-        {
-            AudioManager.Instance.PlaySFX(levelCompleteClip);
-            yield return new WaitForSeconds(levelCompleteClip.length);
-        }
-        AdvanceToNextLevel();
-    }
-
-    private void AdvanceToNextLevel()
-    {
-        // Limpiar bloques antiguos
-        foreach (var b in registeredBlocks)
-            if (b != null) Destroy(b.gameObject);
-        registeredBlocks.Clear();
 
         currentLevelIndex++;
+
         if (currentLevelIndex >= levels.Length)
         {
-            // Fin de juego: reinicio inmediato
+            if (loseClip != null)
+            {
+                AudioManager.Instance.PlaySFX(loseClip);
+                yield return new WaitForSeconds(loseClip.length);
+            }
             GameManager.Instance.RestartImmediate();
+            yield break;
         }
-        else
-        {
-            LoadLevel(currentLevelIndex);
-            FindAnyObjectByType<Ball>().ResetPosition();
-            FindAnyObjectByType<Paddle>().ResetPosition();
-        }
+
+        yield return StartCoroutine(RoundStartRoutine());
     }
 
     private void LoadLevel(int index)
     {
+        foreach (var b in registeredBlocks)
+            if (b != null) b.gameObject.SetActive(false);
         registeredBlocks.Clear();
-        remainingBlocks = 0;
 
+        remainingBlocks = 0;
         var lvl = levels[index];
         int w = lvl.width, h = lvl.height;
 
@@ -126,20 +166,23 @@ public class LevelManager : MonoBehaviour
                 if (durability <= 0) continue;
 
                 Vector3 pos = new Vector3(
-                    (x - w / 2f) * blockSpacing.x,
+                    (x - w / 2f) * blockSpacing.x+1,
                     (y + 1) * blockSpacing.y,
                     0f
                 );
-                var go = Instantiate(blockPrefab, pos, Quaternion.identity, transform);
+                var go = GetBlockFromPool();
+                go.transform.position = pos;
+                go.transform.rotation = Quaternion.identity;
+                go.SetActive(true);
                 var blk = go.GetComponent<Block>();
                 blk.durability = durability;
+                blk.UpdateVisual();
                 registeredBlocks.Add(blk);
                 remainingBlocks++;
             }
         }
     }
 
-    // Se dispara tras pérdida de partida
     private void HandleGameLost()
     {
         StartCoroutine(LoseRoutine());
