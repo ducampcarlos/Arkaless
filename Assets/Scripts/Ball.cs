@@ -5,13 +5,16 @@ public class Ball : MonoBehaviour
     [Tooltip("Initial force magnitude to launch the ball")]
     public float speed = 15f;
 
-    private Rigidbody2D rb;
-    private Vector3 initialPosition;
-
-    bool isBouncing = false;
-
     [SerializeField] AudioClip hitPaddle;
     [SerializeField] AudioClip hitBlock;
+
+    private Rigidbody2D rb;
+    private Vector3 initialPosition;
+    private bool isBouncing = false;
+
+    // Shared cooldown timer for playing any hit SFX
+    private static float lastSFXTime = -Mathf.Infinity;
+    private const float sfxCooldown = 0.05f;
 
     void Awake()
     {
@@ -19,9 +22,6 @@ public class Ball : MonoBehaviour
         initialPosition = transform.position;
     }
 
-    /// <summary>
-    /// Launches the ball from rest in a random direction.
-    /// </summary>
     public void StartBounce()
     {
         rb.bodyType = RigidbodyType2D.Dynamic;
@@ -30,9 +30,6 @@ public class Ball : MonoBehaviour
         isBouncing = true;
     }
 
-    /// <summary>
-    /// Resets the ball to its starting position and stops all motion.
-    /// </summary>
     public void ResetPosition()
     {
         isBouncing = false;
@@ -49,41 +46,53 @@ public class Ball : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("FallOffBoundary"))
-        {
             GameManager.Instance.TriggerGameLost();
-        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        // Handle paddle hits
         if (collision.gameObject.CompareTag("Paddle") && isBouncing)
         {
-            AudioManager.Instance.PlaySFX(hitPaddle);
+            // Play paddle SFX if cooldown has passed
+            if (Time.time - lastSFXTime >= sfxCooldown)
+            {
+                AudioManager.Instance.PlaySFX(hitPaddle);
+                lastSFXTime = Time.time;
+            }
 
-            // Calculate hit point relative to paddle center
+            // Get contact info
             ContactPoint2D contact = collision.contacts[0];
+            float paddleCenterY = collision.collider.bounds.center.y;
+
+            // If contact is on the bottom half of the paddle, skip custom redirect
+            if (contact.point.y < paddleCenterY)
+                return;
+
+            // Otherwise compute custom bounce angle
             float paddleWidth = collision.collider.bounds.size.x;
             float offset = contact.point.x - collision.collider.transform.position.x;
-            float normalizedOffset = Mathf.Clamp(offset / (paddleWidth * 0.5f), -1f, 1f);
+            float normOffset = Mathf.Clamp(offset / (paddleWidth * 0.5f), -1f, 1f);
 
-            // New direction: X by offset, Y always positive
-            Vector2 newDir = new Vector2(normalizedOffset, 1f).normalized;
+            Vector2 newDir = new Vector2(normOffset, 1f).normalized;
 
-            // If hit too close to center, apply slight random angle to avoid vertical loops
-            if (Mathf.Abs(normalizedOffset) < 0.1f)
+            // Prevent straight vertical loops by adding small random angle if near center
+            if (Mathf.Abs(normOffset) < 0.1f)
             {
-                float randomAngle = Random.Range(-10f, 10f); // degrees
-                newDir = Quaternion.Euler(0, 0, randomAngle) * newDir;
-                newDir.Normalize();
+                float randomAngle = Random.Range(-10f, 10f);
+                newDir = (Quaternion.Euler(0, 0, randomAngle) * newDir).normalized;
             }
 
             rb.linearVelocity = newDir * speed;
         }
+        // Handle block hits
         else if (collision.gameObject.CompareTag("Block"))
         {
-            AudioManager.Instance.PlaySFX(hitBlock);
+            if (Time.time - lastSFXTime >= sfxCooldown)
+            {
+                AudioManager.Instance.PlaySFX(hitBlock);
+                lastSFXTime = Time.time;
+            }
         }
     }
-
-
 }

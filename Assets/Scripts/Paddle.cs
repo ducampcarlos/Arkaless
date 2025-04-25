@@ -21,7 +21,7 @@ public class Paddle : MonoBehaviour
 
         Vector2 moveDirection = Vector2.zero;
 
-#if UNITY_ANDROID || UNITY_EDITOR                              
+#if UNITY_ANDROID || UNITY_EDITOR || UNITY_WEBGL                             
         // Android Controls (Touch)
         if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
         {
@@ -30,13 +30,21 @@ public class Paddle : MonoBehaviour
         }
 #endif
 
-#if UNITY_STANDALONE || UNITY_EDITOR
+#if UNITY_STANDALONE || UNITY_EDITOR || UNITY_WEBGL      
         // PC Controls
-        if (Keyboard.current.leftArrowKey.isPressed)
+
+        // check if mouse is pressed on the left or the right of the screen
+        if(Mouse.current != null && Mouse.current.leftButton.isPressed)
+        {
+            float mouseX = Mouse.current.position.x.ReadValue();
+            moveDirection = (mouseX < Screen.width / 2f) ? Vector2.left : Vector2.right;
+        }
+
+        if (Keyboard.current.leftArrowKey.isPressed || Keyboard.current.aKey.isPressed)
         {
             moveDirection = Vector2.left;
         }
-        else if (Keyboard.current.rightArrowKey.isPressed)
+        else if (Keyboard.current.rightArrowKey.isPressed || Keyboard.current.dKey.isPressed)
         {
             moveDirection = Vector2.right;
         }

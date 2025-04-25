@@ -48,10 +48,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   durability: 1
   durabilitySprites:
-  - {fileID: -2015706521117915143, guid: fbd376ddd0ad5324799aac818680498e, type: 3}
   - {fileID: -6453552852522139540, guid: b7630713f5bc6ce47a1d5b8695b855fc, type: 3}
-  - {fileID: -2058001221678158625, guid: f429e063491863d4cbb3af91761a8d94, type: 3}
+  - {fileID: -2015706521117915143, guid: fbd376ddd0ad5324799aac818680498e, type: 3}
   - {fileID: 8341512407410944944, guid: 3fcc8043ad0d69f498cf427acfaa7854, type: 3}
+  - {fileID: -2058001221678158625, guid: f429e063491863d4cbb3af91761a8d94, type: 3}
 --- !u!212 &1249026713153035934
 SpriteRenderer:
   m_ObjectHideFlags: 0
